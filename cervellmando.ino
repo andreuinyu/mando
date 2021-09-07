@@ -2,7 +2,7 @@
 #include <Wire.h>
 Joystick_ Joystick;
 
-#define addr 0x27
+#define addr 0x27 //I2C address for the GPIO expansion IC
 
 #define DEBUG 0
 #if DEBUG == 1
@@ -77,12 +77,12 @@ void setup() {
   pinMode(A2, INPUT_PULLUP); //Roll
   pinMode(A3, INPUT_PULLUP); //Yaw
   pinMode(A0, INPUT_PULLUP); //Throttle
-  pinMode(Trigger, INPUT_PULLUP); //Trigger
-  pinMode(Up, INPUT_PULLUP); //Up
-  pinMode(Down, INPUT_PULLUP); //Down
-  pinMode(Left, INPUT_PULLUP); //Left
-  pinMode(Right, INPUT_PULLUP); //Right
-  pinMode(Ok, INPUT_PULLUP); //Ok
+  pinMode(Trigger, INPUT); //Trigger
+  pinMode(Up, INPUT); //Up
+  pinMode(Down, INPUT); //Down
+  pinMode(Left, INPUT); //Left
+  pinMode(Right, INPUT); //Right
+  pinMode(Ok, INPUT); //Ok
 
   // Initialize Joystick Library
   Joystick.begin();
