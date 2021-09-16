@@ -23,7 +23,6 @@ void printBinary(int v, int num_places) {
 #define debug(x) Serial.print(x)
 #define debugln(x) Serial.println(x)
 #define debugbin(x) printBinary(x, 8)
-
 #else
 #define debug(x)
 #define debugln(x)
