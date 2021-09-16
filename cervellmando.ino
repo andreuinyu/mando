@@ -5,7 +5,7 @@ Joystick_ Joystick;
 
 #define addr 0x27 //I2C address for the GPIO expansion IC
 
-#define DEBUG 1
+#define DEBUG 0
 #define VERBOSE 0
 #if DEBUG == 1
 void printBinary(int v, int num_places) {
