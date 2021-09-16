@@ -199,25 +199,25 @@ void loop() {
     EIO6 = !(resposta & 0b01000000);
     EIO7 = !(resposta & 0b10000000);
 
-    int currentEIO0 = !EIO0; // Button 6: EIO0
+    bool currentEIO0 = !EIO0; // Button 6: EIO0
     if (currentEIO0 != lastEIO0) {
       Joystick.setButton(6, currentEIO0);
       lastEIO0 = currentEIO0;
     }
 
-    int currentEIO1 = !EIO1; // Button 7: EIO1
+    bool currentEIO1 = !EIO1; // Button 7: EIO1
     if (currentEIO1 != lastEIO1) {
       Joystick.setButton(7, currentEIO1);
       lastEIO1 = currentEIO1;
     }
 
-    int currentEIO2 = !EIO2; // Button 8: EIO2
+    bool currentEIO2 = !EIO2; // Button 8: EIO2
     if (currentEIO2 != lastEIO2) {
       Joystick.setButton(8, currentEIO2);
       lastEIO2 = currentEIO2;
     }
 
-    int currentEIO3 = !EIO3; // Button 9: EIO3
+    bool currentEIO3 = !EIO3; // Button 9: EIO3
     if (currentEIO3 != lastEIO3) {
       Joystick.setButton(9, currentEIO3);
       lastEIO3 = currentEIO3;
@@ -287,7 +287,6 @@ void loop() {
     debug("\n\n");
   }
   Joystick.sendState();
-
 }
 
 void ISRoutine() {
