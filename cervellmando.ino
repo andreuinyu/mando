@@ -1,23 +1,40 @@
 #include <Joystick.h>
 #include <Wire.h>
+
 Joystick_ Joystick;
 
 #define addr 0x27 //I2C address for the GPIO expansion IC
 
-#define DEBUG 0
+#define DEBUG 1
+#define VERBOSE 0
 #if DEBUG == 1
-  #define debug(x) Serial.print(x)
-  #define debugln(x) Serial.println(x)
+void printBinary(int v, int num_places) {
+  int mask = 0, n;
+  for (n = 1; n <= num_places; n++) {mask = (mask << 1) | 0x0001;}
+  v = v & mask;  // truncate v to specified number of places
+  while (num_places) {
+    if (v & (0x0001 << (num_places - 1))) {Serial.print("1");}
+    else {Serial.print("0");}
+    --num_places;
+    if (((num_places % 4) == 0) && (num_places != 0)) {Serial.print(" ");}
+  }
+  Serial.println("");
+}
+#define debug(x) Serial.print(x)
+#define debugln(x) Serial.println(x)
+#define debugbin(x) printBinary(x, 8)
+
 #else
-  #define debug(x)
-  #define debugln(x)
+#define debug(x)
+#define debugln(x)
+#define debugbin(x)
 #endif
 
 //Pins
-#define Inter 16
+#define Inter 0
 #define Trigger 14
-#define Up 0
-#define Down 1
+#define Up 1
+#define Down 16
 #define Left 5
 #define Right 7
 #define Ok 15
@@ -73,6 +90,9 @@ bool ISR_change = false;
 unsigned long prevMillis = millis();
 
 void setup() {
+  if (DEBUG) {
+    Serial.begin(300);
+  }
   pinMode(A1, INPUT_PULLUP); //Pitch
   pinMode(A2, INPUT_PULLUP); //Roll
   pinMode(A3, INPUT_PULLUP); //Yaw
@@ -85,7 +105,7 @@ void setup() {
   pinMode(Ok, INPUT); //Ok
 
   // Initialize Joystick Library
-  Joystick.begin();
+  Joystick.begin(false);
   Joystick.setXAxisRange(0, 1024);
   Joystick.setYAxisRange(0, 1024);
   Joystick.setZAxisRange(0, 1024);
@@ -93,15 +113,15 @@ void setup() {
 
   //Initialize I2C
   Wire.begin();
-  
+
   // Turn OFF all pins by sending a high byte (1 bit per byte)
   Wire.beginTransmission(addr);
-  Wire.write(0xF);
+  Wire.write(0b00000000);
   Wire.endTransmission();
 
   // Interrupt routine
-  pinMode(Inter, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(Inter), ISRoutine, CHANGE);  
+  pinMode(Inter, INPUT);
+  attachInterrupt(digitalPinToInterrupt(Inter), ISRoutine, FALLING);
 }
 
 void loop() {
@@ -116,52 +136,58 @@ void loop() {
   Throttle = analogRead(A0);
 
   // Read main I/O Switches
-  int currentTrigger = !digitalRead(Trigger); // Button 0: Trigger
-  if (currentTrigger != lastTrigger){
+  int currentTrigger = digitalRead(Trigger); // Button 0: Trigger
+  if (currentTrigger != lastTrigger) {
     Joystick.setButton(0, currentTrigger);
     lastTrigger = currentTrigger;
   }
 
-  int currentUp = !digitalRead(Up); // Button 1: Up
-  if (currentUp != lastUp){
+  int currentUp = digitalRead(Up); // Button 1: Up
+  if (currentUp != lastUp) {
     Joystick.setButton(1, currentUp);
     lastUp = currentUp;
   }
 
-  int currentDown = !digitalRead(Down); // Button 2: Down
-  if (currentDown != lastDown){
+  int currentDown = digitalRead(Down); // Button 2: Down
+  if (currentDown != lastDown) {
     Joystick.setButton(2, currentDown);
     lastDown = currentDown;
   }
 
-  int currentLeft = !digitalRead(Left); // Button 3: Left
-  if (currentLeft != lastLeft){
+  int currentLeft = digitalRead(Left); // Button 3: Left
+  if (currentLeft != lastLeft) {
     Joystick.setButton(3, currentLeft);
     lastLeft = currentLeft;
   }
 
-  int currentRight = !digitalRead(Right); // Button 4; Right
-  if (currentRight != lastRight){
+  int currentRight = digitalRead(Right); // Button 4; Right
+  if (currentRight != lastRight) {
     Joystick.setButton(4, currentRight);
     lastRight = currentRight;
   }
 
-  int currentOk = !digitalRead(Ok); // Button 5: Ok
-  if (currentOk != lastOk){
+  int currentOk = digitalRead(Ok); // Button 5: Ok
+  if (currentOk != lastOk) {
     Joystick.setButton(5, currentOk);
     lastOk = currentOk;
   }
 
   //Read expansion I/O switches, if there's any update
-  if (ISR_change){
+  if (ISR_change) {
+    debug("\n");
     ISR_change = false;
 
     // Let's READ the status of the pins on the expander
     byte resposta = 0;
     Wire.requestFrom(addr, 1);
-    if (Wire.available()){
+    if (Wire.available()) {
       resposta = Wire.read();
     }
+    
+    debugln("rebut:");
+    debug(resposta);
+    debug("\t");
+    debugbin(resposta);
 
     // Determine pin values
     EIO0 = !(resposta & 0b00000001);
@@ -174,49 +200,50 @@ void loop() {
     EIO7 = !(resposta & 0b10000000);
 
     int currentEIO0 = !EIO0; // Button 6: EIO0
-    if (currentEIO0 != lastEIO0){
+    if (currentEIO0 != lastEIO0) {
       Joystick.setButton(6, currentEIO0);
       lastEIO0 = currentEIO0;
     }
 
     int currentEIO1 = !EIO1; // Button 7: EIO1
-    if (currentEIO1 != lastEIO1){
+    if (currentEIO1 != lastEIO1) {
       Joystick.setButton(7, currentEIO1);
       lastEIO1 = currentEIO1;
     }
 
     int currentEIO2 = !EIO2; // Button 8: EIO2
-    if (currentEIO2 != lastEIO2){
+    if (currentEIO2 != lastEIO2) {
       Joystick.setButton(8, currentEIO2);
       lastEIO2 = currentEIO2;
     }
 
     int currentEIO3 = !EIO3; // Button 9: EIO3
-    if (currentEIO3 != lastEIO3){
+    if (currentEIO3 != lastEIO3) {
       Joystick.setButton(9, currentEIO3);
       lastEIO3 = currentEIO3;
     }
 
-    int currentEIO4 = !EIO4; // Button 10: EIO4
-    if (currentEIO4 != lastEIO4){
+    bool currentEIO4 = !EIO4; // Button 10: EIO4
+    if (currentEIO4 != lastEIO4) {
+      debugln(currentEIO4);
       Joystick.setButton(10, currentEIO4);
       lastEIO4 = currentEIO4;
     }
 
-    int currentEIO5 = !EIO5; // Button 11: EIO5
-    if (currentEIO5 != lastEIO5){
+    bool currentEIO5 = !EIO5; // Button 11: EIO5
+    if (currentEIO5 != lastEIO5) {
       Joystick.setButton(11, currentEIO5);
       lastEIO5 = currentEIO5;
     }
 
-    int currentEIO6 = !EIO6; // Button 12: EIO6
-    if (currentEIO6 != lastEIO6){
+    bool currentEIO6 = !EIO6; // Button 12: EIO6
+    if (currentEIO6 != lastEIO6) {
       Joystick.setButton(12, currentEIO6);
       lastEIO6 = currentEIO6;
     }
 
-    int currentEIO7 = !EIO7; // Button 13: EIO7
-    if (currentEIO7 != lastEIO7){
+    bool currentEIO7 = !EIO7; // Button 13: EIO7
+    if (currentEIO7 != lastEIO7) {
       Joystick.setButton(13, currentEIO7);
       lastEIO7 = currentEIO7;
     }
@@ -228,7 +255,39 @@ void loop() {
   Joystick.setZAxis(Yaw);
   Joystick.setThrottle(Throttle);
 
+  if (VERBOSE) {
+    debug("0:");
+    debugln(currentTrigger);
+    debug("1:");
+    debugln(currentUp);
+    debug("2:");
+    debugln(currentDown);
+    debug("3:");
+    debugln(currentLeft);
+    debug("4:");
+    debugln(currentRight);
+    debug("5:");
+    debugln(currentOk);
+    debug("6:");
+    debugln(currentEIO0);
+    debug("7:");
+    debugln(currentEIO1);
+    debug("8:");
+    debugln(currentEIO2);
+    debug("9:");
+    debugln(currentEIO3);
+    debug("10:");
+    debugln(currentEIO4);
+    debug("11:");
+    debugln(currentEIO5);
+    debug("12:");
+    debugln(currentEIO6);
+    debug("13:");
+    debugln(currentEIO7);
+    debug("\n\n");
+  }
   Joystick.sendState();
+
 }
 
 void ISRoutine() {
